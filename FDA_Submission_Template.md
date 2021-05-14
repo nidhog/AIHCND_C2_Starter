@@ -25,12 +25,9 @@ Xhale-001 is indicated for detecting pneumonia in chest X-ray images for males a
 
 ### 2. Algorithm Design and Function
 
-<figure>
-  <img
-  src="img/flowchart.jpg"
-  alt="algorithm flowchart">
-  <figcaption>Figure 1 - Xhale-001 Algorithm Flow Chart</figcaption>
-</figure>
+
+![Algorithm](img/flowchart.jpg "Algorithm Flow Chart")
+*Figure 1 - Xhale-001 Algorithm Flow Chart.*
 
 **DICOM Checking Steps:**
 
