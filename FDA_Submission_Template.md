@@ -9,35 +9,37 @@
 ### 1. General Information
 
 **Intended Use Statement:** 
-The Xhale-001 system is intended to be used in a clinical setting to prioritize the workflow of chest X-rays to be reviewd by the hospital's radiologists. The Xhale-001 uses a machine learning algorithm to analyze chest X-ray images for features suggestive of Pneumonia. 
+The Xhale-001 system is intended to be used in a clinical setting to prioritize the workflow of chest X-rays that will be reviewed by the hospital's radiologists. The Xhale-001 uses a machine learning algorithm to analyze chest X-ray images for features suggestive of Pneumonia. 
 
-The Xhale-001 is intended to be used on digital X-ray chest images. The result of the Xhale-001 is not conclusive, the identification of cases of Pneumonia is not intended for diagnostic use, the result is intended to be used to notify. Thus Xhale-001 should not be used to replace a patient's evaluation, nor to make, confirm or reject diagnoses.
+The Xhale-001 is intended to be used on digital X-ray chest images. The result of the Xhale-001 is not conclusive, the identification of cases of Pneumonia is not intended for diagnostic use. The result of the Xhale-001 is intended to be used to prioritize chest X-ray images that show a possibility of pneumonia. Thus Xhale-001 should not be used to replace a patient's evaluation, nor to make, confirm or reject diagnoses.
 
 **Indications for Use:**
-Xhale-001 is indicated for detecting pneumonia in chest X-ray images for males and females between the ages of and .
+Xhale-001 is indicated for detecting pneumonia in chest X-ray images of the chest for males and females between the ages of 1 and 95. The images must be using a 'DX' modality and in the viewing positions 'PA' or 'AP'.
+
 **Device Limitations:**
-* This algorithm must be run with a computer that meet minimum GPU and RAM requirements.
-* Chest X-ray data.
-* Can be highly confused with Infiltration. Can be slightly confused with Edema, Effusion and Atelectasis.
-* Unknowns such as persons in pregnancy or with conditions that may impact the X-ray chest image reading
+* Xhale-001 must be run on a computer that meets the minimum GPU and RAM requirements.
+* Xhale-001 can only be used on Chest X-ray data.
+* Due to a high level of comorbidity, Infiltration can be highly confused with Pneumonia by the Xhale-001. Pneumonia can also be slightly confused with Edema, Effusion and Atelectasis.
+* Certain unknowns that impact the X-ray chest image such as persons in pregnancy were not considered and may produce unexpected results.
+
 **Clinical Impact of Performance:**
 
+The Xhale-001 was designed to avoid False Negatives as much as possible, this tradeoff however errs in the side of False Positives. This means that the Xhale-001 will tend to suspect the presence of pneumonia in patients that do not have the condition. 
+
+The results of the Xhale-001 are designed to be used within workflow prioritization to sort out patients that are more likely to have Pneumonia. All of the X-ray images must later be reviewed by a radiologist and must never be used as a diagnosis. Radiologists shall not be biased by the result of the Xhale-001 as it may mislead their diagnosis. Radiologists must review the X-ray images independently of the result of the Xhale-001.
 
 ### 2. Algorithm Design and Function
-
-<p align="center">
-
 ![Algorithm](img/flowchart.jpg "Algorithm Flow Chart")
 *Figure 1 - Xhale-001 Algorithm Flow Chart.*
-
-</p>
 
 **DICOM Checking Steps:**
 
 Check DICOM Headers for:
-Modality == 'DX'
-BodyPartExamined=='CHEST'
-PatientPosition in 'PA' or'AP' Position
+* `Modality` is equal to: `DX`
+* `BodyPartExamined` is equal to: `CHEST`
+* `PatientPosition` is equal to either: `PA` or `AP`.
+
+If any of the above is false, the DICOM file is skipped.
 
 **Preprocessing Steps:**
 * The pixel array in the DICOM file is used.
@@ -48,29 +50,77 @@ PatientPosition in 'PA' or'AP' Position
 **CNN Architecture:**
 We use a pretrained VGG16 model and we fine-tune it for our use case. 
 * We used a pretrained VGG16 model where freeze the first 17 layers.
-* We add a BatchNormalizer
-* We add a convolution
-* We add a 
-
+* We add a `BatchNormalization` step.
+* We add a relu `Dense` layer of size 1024. 
+* We add a `Dropout` layer (0.5) to avoid overfitting.
+* We add a relu `Dense` layer of size 512.
+* We add another `Dropout` layer (0.5).
+* We add a relu `Dense` layer of size 256. 
+* We add another `Dropout` layer (0.5). 
+* We add a `Dense` layer of size 1 to get the output using a sigmoid function.
 
 ### 3. Algorithm Training
 
 **Parameters:**
-* Types of augmentation used during training
-* Batch size
-* Optimizer learning rate
-* Layers of pre-existing architecture that were frozen
-* Layers of pre-existing architecture that were fine-tuned
-* Layers added to pre-existing architecture
+* During the learning, we use a learning rate of `0.0001`.
+* The loss function used is binary crossentropy.
+* The optimizer used is the Adam optimizer (Adaptive Moment Estimation)
+* The images used for training are augmented. Validation data is only augmented using rescaling. Training data is augmented using the keras image data augmentation with a rotation of 20, a horizontal flip (no vertical flip), a height_shift_range of 0.1, a width_shift_range of 0.1, a shear_range of 0.1, and finally a zoom_range of 0.1
+* We use a batch size of 64.
+* We use 100 steps per epoch with a maximum of 20 epochs, and 10 validation steps.
+* The algorithm stops at the 19th epoch.
+* We use a threshold of 0.25 on the output to predict pneumonia.
 
-<< Insert algorithm training performance visualization >> 
 
-<< Insert P-R curve >>
+
+![Algorithm](img/model_curve_loss.png "Age distribution")
+*Figure 2 - Algorithm training performance.*
+
+
+![P-R curve](img/final_pr.png "Age distribution")
+*Figure 2 - Precision-Recall curve.*
+
+
+![Algorithm](img/final_roc.png "Age distribution")
+*Figure 2 - ROC curve.*
+
 
 **Final Threshold and Explanation:**
 
+We decide to choose a threshold of 0.25
+
+![Algorithm](img/final_recall.png "Age distribution")
+*Figure 2 - Recall by threshold*
+
+This is because in Xhale-001 we decide to focus on higher sensitivity (recall). This is done to avoid missing any positive cases and avoid False Negatives (which in this case would mean not prioritizing a patient that has pneumonia).
+As a consequence the Xhale-001 may end up identifying an image as containing pneumonia more often. On the other hand, it is less likely to miss an image containing pneumonia.
+
+![Algorithm](img/final_prediction0.png "Age distribution")
+*Figure 2 - Example prediction on a batch of 256 images.*
+
+![Algorithm](img/final_prediction1.png "Age distribution")
+*Figure 2 - Example prediction on a batch of 256 images.*
 ### 4. Databases
- (For the below, include visualizations as they are useful and relevant)
+The original dataset used has
+
+
+* Age distribution: we truncate the dataset to remove the patients whose age is not reasonable such as patients that seem to be 414 years old. This is because it may indicate that there are other possible data collection issues with these samples. With that removed the age distribution is shown below. The age seems to be distributed similarly accross the population with and without pneumonia as shown below:
+
+![Algorithm](img/eda_age_hist.png "Age distribution")
+*Figure 2 - Age distribution with extremes removed.*
+
+
+![Algorithm](img/eda_age_by_occurence.png "Age distribution")
+*Figure 2 - Age box plots by occurance of penumonia.*
+
+* Comorbidity: Infiltration is commonly found with Pneumonia and is present in 42% of the Pneumonia cases. It is directly followed by Edema (24%), Effusion (19%) and Atelectasis (18%) as shown below.
+![Algorithm](img/eda_comorbidity.png "Age distribution")
+*Figure 2 - Comorbidity of other diseases with pneumonia.*
+
+* Gender distirbution: The dataset contains 56% male patients and 43% female patients. The occurence of pneumonia in both seems to be slightly different: 1.3% in males and 1.2% in females. 
+
+![Algorithm](img/eda_pneumonia_occurence.png "Age distribution")
+*Figure 2 - Age box plots by occurance of penumonia.*
 
 **Description of Training Dataset:** 
 * The prevalence of Pneumonia is very low in the dataset. Only <TODO> of the images are positive cases of pneumonia. For this reason, we select all positive pneumonia cases and we randomly select an equal number of negative pneumonia cases. This means we are excluding <TODO>. The reason for this is to make sure there is an equal amount of positive and negative pneumonia cases.
