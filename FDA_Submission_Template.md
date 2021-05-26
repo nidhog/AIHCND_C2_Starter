@@ -134,6 +134,7 @@ The age seems to be distributed similarly accross the population with and withou
 
 *Figure 11 - Age box plots by occurance of penumonia.*
 
+* View positions: the dataset contains the view positions PA and AP, the presence of pneumonia seems to occur in 1.8% of the AP positions versus 0.9% for the PA positions. 
 
 * Training/Validation split: we split the data into 80% training data and 20% validation data.
 
@@ -162,6 +163,11 @@ The intended patient population must fulfill the following criteria:
 * The prevalence of pneumonia is close to 1.273% in the whole dataset.
 * The age is between 1-100, with a mean close to 47 and a standard deviation of 16.
 * Male and female populations are both present in nearly equal amounts.
+* This data must be in the form of DICOM images that fulfill:
+  * `Modality` is equal to: `DX`
+  * `BodyPartExamined` is equal to: `CHEST`
+  * `PatientPosition` is equal to either: `PA` or `AP`. (note that in the original dataset used AP positions have 1.8% cases of pneumonia whereas the PA positions have 0.9% cases of pneumonia)
+
 
 **Ground Truth Acquisition Methodology:**
 
