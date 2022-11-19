@@ -1,4 +1,5 @@
 # Pneumonia Detection from Chest X-Rays
+**Short summary** XHale is an algorithm intended to support the identification of pneumonia using X-Ray images of the chest.
 
 ## Project Overview
 
